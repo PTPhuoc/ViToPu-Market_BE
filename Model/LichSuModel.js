@@ -3,12 +3,10 @@ const mongoose = require('mongoose');
 const lichSuSchema = new mongoose.Schema({
     maKhachHang: {
         type: String,
-        ref: 'ClientModel',
         required: true,
     },
     maSanPham: {
         type: String,
-        ref: 'SanPhamModel',
         required: true,
     },
     soLuong: {

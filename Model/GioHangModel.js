@@ -2,17 +2,15 @@ const mongoose = require('mongoose');
 
 const gioHangSchema = new mongoose.Schema({
     maKhachHang: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'ClientModel',
+        type: String,
         required: true,
     },
     maSanPham: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'SanPhamModel',
+        type: String,
         required: true,
     },
     soLuong: {
-        type: Integer,
+        type: Number,
         required: true,
     },
 });

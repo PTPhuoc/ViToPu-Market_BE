@@ -2,13 +2,11 @@ const mongoose = require('mongoose');
 
 const thongBaoSchema = new mongoose.Schema({
     maKhachHang: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'ClientModel',
+        type: String,
         required: true,
     },
     maCuaHang: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'CuaHangModel',
+        type: String,
         required: true,
     },
     noiDung: {
