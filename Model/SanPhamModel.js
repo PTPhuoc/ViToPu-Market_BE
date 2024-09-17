@@ -26,6 +26,10 @@ const sanPhamSchema = new mongoose.Schema({
         type: String,
         required: false,
     },
+    LoaiAnh: {
+        type: String,
+        required: false,
+    },
 });
 const SanPhamModel = mongoose.model('SanPhamModel', sanPhamSchema, 'SanPhamModel');
 

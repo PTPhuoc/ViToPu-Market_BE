@@ -34,5 +34,9 @@ const clientSchema = new mongoose.Schema({
         type: String,
         required: false
     },
+    LoaiAnh: {
+        type: String,
+        required: false,
+    },
 });
 module.exports = mongoose.model('ClientModel', clientSchema, 'ClientModel');

@@ -3,13 +3,23 @@ const TaskOnceImage = require("../TakeImage");
 const fs = require("fs");
 const SanPhamModel = require("../Model/SanPhamModel");
 
-uri.post("/sanphamlist", async (req, res) => {
-  try {
-    const sanPhamList = await SanPhamModel.find({});
-    res.json(sanPhamList);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+uri.post("/ListID", async (req, res) => {
+  const ListID = await SanPhamModel.find({}, "maSanPham");
+  res.send(ListID);
+});
+
+uri.post("/Detail", async (req, res) => {
+  const Product = await SanPhamModel.findOne({ maSanPham: req.body.maSanPham });
+  const ImageProduct = fs
+    .readFileSync(
+      TaskOnceImage(Product.maSanPham + Product._id + "." + Product.LoaiAnh)
+    )
+    .toString("base64");
+  const DetailProduct = {
+    ...Product.toObject(),
+    ImageValue: ImageProduct,
+  };
+  res.json(DetailProduct);
 });
 
 uri.post("/timkiemsanpham", async (req, res) => {
@@ -22,12 +32,6 @@ uri.post("/timkiemsanpham", async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
-});
-
-uri.post("/LayAnh", (req, res) => {
-  res.send(
-    fs.readFileSync(TaskOnceImage(req.body.NameImage)).toString("base64")
-  );
 });
 
 module.exports = uri;
