@@ -1,14 +1,24 @@
+const ClientModel = require("./Model/ClientModel"); 
 const multer = require('multer');
 const path = require('path');
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-      cb(null, './Image'); // Thư mục lưu file
+      cb(null, './Image');
     },
-    filename: function (req, file, cb) {
-      const NameFile = req.body.NameFile; // Tùy chỉnh tên file nếu cần
-      const ext = path.extname(file.originalname); // Lấy phần mở rộng của file
-      cb(null, NameFile + ext); // Truyền tên file mới vào callback
+    filename: async function (req, file, cb) {
+      const { maKhachHang, hoVaTen, gioiTinh, ngaySinh, diaChi, email, matKhau } = req.body;
+      const extentiponPath = path.extname(file.originalname);
+      const NewClient = new ClientModel({
+        maKhachHang, hoVaTen, gioiTinh, ngaySinh, diaChi, email, matKhau
+      })
+
+      NewClient.hinhAnh = NewClient.maKhachHang + NewClient._id
+      NewClient.LoaiAnh = extentiponPath
+
+      await NewClient.save()
+
+      cb(null, NewClient.hinhAnh + "." + extentiponPath)
     }
   });
   
