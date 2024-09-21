@@ -15,8 +15,8 @@ db.once('open', () => {
     console.log('Kết nối MongoDB thành công');
 });
 
-app.use("/SanPham", SanPhamAPI);
-app.use("/DanhGia", DanhGiaAPI);
+app.use("/api", SanPhamAPI);
+app.use("/api", DanhGiaAPI);
 
 app.listen(9000, () => {
   console.log("Server is running!");
