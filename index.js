@@ -3,9 +3,12 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const SanPhamAPI = require("./API/SanPhamAPI");
 const DanhGiaAPI = require("./API/DanhGiaAPI");
+const ClientAPI = require("./API/ClientAPI");
 const app = express();
 
 mongoose.connect("mongodb+srv://tanphuocphan370:12345@e-commerce.nsbpm.mongodb.net/ViToPu");
+
+require("dotenv").config();
 
 app.use(express.json());
 app.use(cors())
@@ -17,6 +20,7 @@ db.once('open', () => {
 
 app.use("/api", SanPhamAPI);
 app.use("/api", DanhGiaAPI);
+app.use("/api", ClientAPI);
 
 app.listen(9000, () => {
   console.log("Server is running!");

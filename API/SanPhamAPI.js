@@ -22,7 +22,7 @@ uri.post("/Detail", async (req, res) => {
   res.json(DetailProduct);
 });
 
-uri.post("/timkiemsanpham", async (req, res) => {
+uri.get("/timkiemsanpham", async (req, res) => {
   try {
     const tenSanPham = req.query.tenSanPham;
     const sanPhamList = await SanPhamModel.find({

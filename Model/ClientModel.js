@@ -32,7 +32,7 @@ const clientSchema = new mongoose.Schema({
     },
     hinhAnh: {
         type: String,
-        required: false
+        required: false,
     },
     LoaiAnh: {
         type: String,
