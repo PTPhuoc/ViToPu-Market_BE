@@ -22,15 +22,17 @@ uri.post("/Detail", async (req, res) => {
   res.json(DetailProduct);
 });
 
-uri.get("/timkiemsanpham", async (req, res) => {
-  try {
-    const tenSanPham = req.query.tenSanPham;
-    const sanPhamList = await SanPhamModel.find({
-      tenSanPham: new RegExp(tenSanPham, "i"),
-    });
-    res.json(sanPhamList);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+uri.post("/Search", async (req, res) => {
+  const ListIDOfSearch = await SanPhamModel.find(
+    {
+      tenSanPham: new RegExp(req.body.Search, "i"),
+    },
+    "maSanPham"
+  );
+  if (ListIDOfSearch.length === 0) {
+    res.status(404).json({ Error: "Empty Product" });
+  } else {
+    res.json(ListIDOfSearch);
   }
 });
 
