@@ -9,13 +9,17 @@ const path = require('path');
 
 uri.post('/register', LoadImage.single('hinhAnh'), async (req, res) => {
   try {
-    const { maKhachHang, hoVaTen, gioiTinh, ngaySinh, diaChi, email, matKhau } = req.body;
+    const { hoVaTen, gioiTinh, ngaySinh, diaChi, email, matKhau } = req.body;
 
     // Kiểm tra xem email đã tồn tại chưa
     let client = await ClientModel.findOne({ email });
     if (client) {
       return res.status(400).json({ msg: 'Email đã được sử dụng' });
     }
+
+    // Lấy số lượng khách hàng hiện tại
+    const clientCount = await ClientModel.countDocuments();
+    const maKhachHang = `KH${String(clientCount + 1).padStart(3, '0')}`; // Tạo maKhachHang tự động
 
     // Mã hóa mật khẩu
     const salt = await bcrypt.genSalt(10);
@@ -46,19 +50,15 @@ uri.post('/register', LoadImage.single('hinhAnh'), async (req, res) => {
 
     await client.save();
 
-    // Đổi tên file
+    // Đổi tên file (phần này không thay đổi)
     const fileName = req.file.originalname;
     const fileExt = fileName.split('.').pop().toLowerCase();
     const newFileName = `${client.maKhachHang}${client._id}`;
     const oldPath = req.file.path;
     const newPath = path.join(__dirname, '..', 'Image', `${newFileName}.${fileExt}`);
     
-    console.log(`Old Path: ${oldPath}`);
-    console.log(`New Path: ${newPath}`);
-
     if (fs.existsSync(oldPath)) {
       fs.renameSync(oldPath, newPath);
-      
       // Cập nhật tên file vào cơ sở dữ liệu (không có phần mở rộng)
       client.hinhAnh = newFileName; // Chỉ lưu tên file
       await client.save(); // Lưu cập nhật
@@ -68,8 +68,6 @@ uri.post('/register', LoadImage.single('hinhAnh'), async (req, res) => {
 
     // Đọc hình ảnh đã lưu
     const imagePath = path.join(__dirname, '..', 'Image', `${client.hinhAnh}.${fileExt}`); // Đường dẫn đúng
-    console.log(`Image Path: ${imagePath}`);
-    
     const imageBuffer = fs.readFileSync(imagePath);
     const base64Image = imageBuffer.toString('base64');
 
@@ -106,6 +104,7 @@ uri.post('/register', LoadImage.single('hinhAnh'), async (req, res) => {
     res.status(500).send('Lỗi server');
   }
 });
+
 
 
 // Đăng nhập
