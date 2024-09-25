@@ -9,72 +9,31 @@ const path = require('path');
 
 uri.post('/register', LoadImage.single('hinhAnh'), async (req, res) => {
   try {
-    const { hoVaTen, gioiTinh, ngaySinh, diaChi, email, matKhau } = req.body;
-
-    // Kiểm tra xem email đã tồn tại chưa
-    let client = await ClientModel.findOne({ email });
-    if (client) {
-      return res.status(400).json({ msg: 'Email đã được sử dụng' });
-    }
-
-    // Lấy số lượng khách hàng hiện tại
-    const clientCount = await ClientModel.countDocuments();
-    const maKhachHang = `KH${String(clientCount + 1).padStart(3, '0')}`; // Tạo maKhachHang tự động
-
-    // Mã hóa mật khẩu
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(maKhachHang, salt);
-
-    // Xử lý tải lên hình ảnh
-    let hinhAnh = '';
-    let LoaiAnh = '';
-    if (req.file) {
-      hinhAnh = req.file.filename;
-      LoaiAnh = req.file.mimetype.split('/')[1]; // Lấy phần mở rộng của file
-    } else {
+    // Kiểm tra xem có file ảnh được tải lên không
+    if (!req.file) {
       return res.status(400).json({ msg: 'Chưa tải lên hình ảnh' });
     }
 
-    // Tạo client mới
-    client = new ClientModel({
-      maKhachHang,
-      hoVaTen,
-      gioiTinh,
-      ngaySinh,
-      diaChi,
-      email,
-      matKhau: hashedPassword,
-      hinhAnh,
-      LoaiAnh
-    });
+    // Lấy thông tin người dùng đã được tạo bởi LoadImage middleware
+    const NewClient = req.NewClient;
 
-    await client.save();
+    // Mã hóa mật khẩu (nếu chưa được mã hóa trong LoadImage middleware)
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(NewClient.matKhau, salt);
+    NewClient.matKhau = hashedPassword;
 
-    // Đổi tên file (phần này không thay đổi)
-    const fileName = req.file.originalname;
-    const fileExt = fileName.split('.').pop().toLowerCase();
-    const newFileName = `${client.maKhachHang}${client._id}`;
-    const oldPath = req.file.path;
-    const newPath = path.join(__dirname, '..', 'Image', `${newFileName}.${fileExt}`);
-    
-    if (fs.existsSync(oldPath)) {
-      fs.renameSync(oldPath, newPath);
-      // Cập nhật tên file vào cơ sở dữ liệu (không có phần mở rộng)
-      client.hinhAnh = newFileName; // Chỉ lưu tên file
-      await client.save(); // Lưu cập nhật
-    } else {
-      return res.status(400).json({ msg: 'Lỗi tải lên hình ảnh' });
-    }
+    // Lưu NewClient vào cơ sở dữ liệu
+    await NewClient.save();
 
     // Đọc hình ảnh đã lưu
-    const imagePath = path.join(__dirname, '..', 'Image', `${client.hinhAnh}.${fileExt}`); // Đường dẫn đúng
+    const imagePath = path.join(__dirname,'..', 'Image', `${NewClient.hinhAnh}.${NewClient.LoaiAnh}`);
     const imageBuffer = fs.readFileSync(imagePath);
     const base64Image = imageBuffer.toString('base64');
 
     // Tạo JWT token
     const payload = {
       client: {
-        id: client.id
+        id: NewClient.id
       }
     };
 
@@ -88,14 +47,15 @@ uri.post('/register', LoadImage.single('hinhAnh'), async (req, res) => {
       { expiresIn: '1h' },
       (err, token) => {
         if (err) throw err;
-        res.json({ 
-          token, 
-          client: { 
-            id: client.id, 
-            email: client.email, 
-            hoVaTen: client.hoVaTen,
+        res.json({
+          token,
+          client: {
+            id: NewClient.id,
+            maKhachHang: NewClient.maKhachHang,
+            email: NewClient.email,
+            hoVaTen: NewClient.hoVaTen,
             hinhAnh: base64Image
-          } 
+          }
         });
       }
     );
@@ -104,29 +64,56 @@ uri.post('/register', LoadImage.single('hinhAnh'), async (req, res) => {
     res.status(500).send('Lỗi server');
   }
 });
-
-
-
 // Đăng nhập
 uri.post('/login', async (req, res) => {
   try {
+    // Lấy email và mật khẩu từ req.body
     const { email, matKhau } = req.body;
 
-    // Kiểm tra xem email có tồn tại không
-    let client = await ClientModel.findOne({ email });
+    // Log ra email và mật khẩu đã nhập
+    console.log("Email được nhập:", email);
+    console.log("Mật khẩu được nhập:", matKhau);
+
+    // Kiểm tra xem email và mật khẩu có được cung cấp không
+    if (!email || !matKhau) {
+      return res.status(400).json({ msg: 'Vui lòng cung cấp cả email và mật khẩu' });
+    }
+
+    // Tìm client trong cơ sở dữ liệu
+    let client;
+    try {
+      client = await ClientModel.findOne({ email });
+      console.log("Kết quả tìm kiếm client:", client);
+    } catch (dbError) {
+      console.error("Lỗi khi truy vấn cơ sở dữ liệu:", dbError);
+      return res.status(500).json({ msg: 'Lỗi khi truy cập cơ sở dữ liệu' });
+    }
+
+    // Kiểm tra nếu không tìm thấy client
     if (!client) {
+      console.log("Không tìm thấy client với email này");
       return res.status(400).json({ msg: 'Thông tin đăng nhập không hợp lệ' });
     }
 
     // Kiểm tra mật khẩu
-    const isMatch = await bcrypt.compare(matKhau, client.matKhau);
+    let isMatch;
+    try {
+      isMatch = await bcrypt.compare(matKhau, client.matKhau);
+    } catch (bcryptError) {
+      console.error("Lỗi khi so sánh mật khẩu:", bcryptError);
+      return res.status(500).json({ msg: 'Lỗi xác thực' });
+    }
+
+    // Nếu mật khẩu không khớp
     if (!isMatch) {
       return res.status(400).json({ msg: 'Thông tin đăng nhập không hợp lệ' });
     }
 
     // Đọc hình ảnh của client
-    const imagePath = TaskOnceImage(client.hinhAnh);
-    const base64Image = await LoadImage(imagePath);
+    const imagePath = path.join(__dirname,'..', 'Image', `${client.hinhAnh}.${client.LoaiAnh}`);
+    const imageBuffer = fs.readFileSync(imagePath);
+    const base64Image = imageBuffer.toString('base64');
+
 
     // Tạo JWT token
     const payload = {
@@ -135,14 +122,18 @@ uri.post('/login', async (req, res) => {
       }
     };
 
+    // Tạo và trả về JWT token
     jwt.sign(
       payload,
       process.env.JWT_SECRET,
       { expiresIn: '1h' },
       (err, token) => {
-        if (err) throw err;
-        res.json({ 
-          token, 
+        if (err) {
+          console.error("Lỗi khi tạo token:", err);
+          return res.status(500).json({ msg: 'Lỗi khi tạo token' });
+        }
+        res.json({
+          token,
           client: {
             id: client.id,
             email: client.email,
@@ -153,7 +144,7 @@ uri.post('/login', async (req, res) => {
       }
     );
   } catch (err) {
-    console.error(err.message);
+    console.error("Lỗi server:", err.message);
     res.status(500).send('Lỗi server');
   }
 });
