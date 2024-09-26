@@ -108,13 +108,6 @@ uri.post('/login', async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ msg: 'Thông tin đăng nhập không hợp lệ' });
     }
-
-    // Đọc hình ảnh của client
-    const imagePath = path.join(__dirname,'..', 'Image', `${client.hinhAnh}.${client.LoaiAnh}`);
-    const imageBuffer = fs.readFileSync(imagePath);
-    const base64Image = imageBuffer.toString('base64');
-
-
     // Tạo JWT token
     const payload = {
       client: {
@@ -137,8 +130,7 @@ uri.post('/login', async (req, res) => {
           client: {
             id: client.id,
             email: client.email,
-            hoVaTen: client.hoVaTen,
-            hinhAnh: base64Image
+            hoVaTen: client.hoVaTen
           }
         });
       }
