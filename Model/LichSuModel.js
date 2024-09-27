@@ -10,7 +10,7 @@ const lichSuSchema = new mongoose.Schema({
         required: true,
     },
     soLuong: {
-        type: Integer,
+        type: Number,
         required: true,
     },
     ngayMua: {

@@ -4,6 +4,8 @@ const cors = require("cors");
 const SanPhamAPI = require("./API/SanPhamAPI");
 const DanhGiaAPI = require("./API/DanhGiaAPI");
 const ClientAPI = require("./API/ClientAPI");
+const LichSuAPI = require("./API/LichSuAPI");
+const CuaHangAPI = require("./API/CuaHangAPI");
 const app = express();
 
 mongoose.connect("mongodb+srv://tanphuocphan370:12345@e-commerce.nsbpm.mongodb.net/ViToPu");
@@ -18,9 +20,11 @@ db.once('open', () => {
     console.log('Kết nối MongoDB thành công');
 });
 
+app.use("/api", CuaHangAPI);
 app.use("/api", SanPhamAPI);
 app.use("/api", DanhGiaAPI);
-app.use("/api", ClientAPI); // để yên cái đuôi API cho t test nha m báo quá 
+app.use("/api", ClientAPI);
+app.use("/api", LichSuAPI); // để yên cái đuôi API cho t test nha m báo quá 
 
 app.listen(9000, () => {
   console.log("Server is running!");
