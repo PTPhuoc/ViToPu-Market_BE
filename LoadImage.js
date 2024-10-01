@@ -9,8 +9,12 @@ const storage = multer.diskStorage({
     filename: async function (req, file, cb) {
     const { hoVaTen, gioiTinh, ngaySinh, diaChi, email, matKhau } = req.body
     const ClientCount = await ClientModel.countDocuments()+1 
+
+    const hashedPassword = await bcrypt.hash(matKhau, saltRounds);
+
     const NewClient = new ClientModel({
-      hoVaTen, gioiTinh, ngaySinh, diaChi, email, matKhau, maKhachHang: "KH" + (ClientCount < 10 ? "00" + ClientCount : ClientCount < 100 ? "0" + ClientCount : ClientCount)
+      hoVaTen, gioiTinh, ngaySinh, diaChi, email, matKhau: hashedPassword,
+      maKhachHang: "KH" + (ClientCount < 10 ? "00" + ClientCount : ClientCount < 100 ? "0" + ClientCount : ClientCount)
     })
     const extentiponPath = path.extname(file.originalname).slice(1);
     NewClient.hinhAnh = NewClient.maKhachHang + NewClient._id
