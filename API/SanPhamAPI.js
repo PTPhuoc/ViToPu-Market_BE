@@ -80,4 +80,55 @@ uri.get('/products-by-store/:maCuaHang', async (req, res) => {
   }
 });
 
+uri.get('/product/:maSanPham', async (req, res) => {
+  try {
+    const { maSanPham } = req.params;
+    const product = await SanPhamModel.findOne({ maSanPham });
+
+    if (!product) {
+      return res.status(404).json({ msg: 'Không tìm thấy sản phẩm' });
+    }
+
+    res.status(200).send(product);
+  } catch (error) {
+    console.error('Lỗi khi lấy thông tin sản phẩm: ', error);
+    res.status(500).send(error);
+  }
+});
+
+uri.get('/store/:maCuaHang', async (req, res) => {
+  try {
+    const { maCuaHang } = req.params;
+    const store = await CuaHangModel.findOne({ maCuaHang });
+
+    if (!store) {
+      return res.status(404).json({ msg: 'Không tìm thấy cửa hàng' });
+    }
+
+    res.status(200).send(store);
+  } catch (error) {
+    console.error('Lỗi khi lấy thông tin cửa hàng: ', error);
+    res.status(500).send(error);
+  }
+});
+
+uri.post('/buy-product', async (req, res) => {
+  try {
+    const { maSanPham, maKhachHang } = req.body;
+    
+    const product = await SanPhamModel.findOne({ maSanPham });
+    if (!product) {
+      return res.status(404).json({ msg: 'Không tìm thấy sản phẩm' });
+    }
+
+    product.maKhachHang = maKhachHang;
+    await product.save();
+
+    res.status(201).json({ msg: 'Giao dịch thành công', product });
+  } catch (error) {
+    console.error('Lỗi khi mua sản phẩm: ', error);
+    res.status(500).send(error);
+  }
+});
+
 module.exports = uri;
