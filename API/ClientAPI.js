@@ -167,14 +167,14 @@ uri.post('/forgot-password', async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: 'Gmail',
       auth: {
-        user: 'your-email@gmail.com',
-        pass: 'your-email-password'
+        user: "1050080070@sv.hcmunre.edu.vn",
+        pass: "cgzj dcgv wvry qjwf",
       }
     });
 
     const mailOptions = {
       to: client.email,
-      from: 'your-email@gmail.com',
+      from: '1050080070@sv.hcmunre.edu.vn',
       subject: 'Đặt lại mật khẩu',
       text: `Bạn nhận được email này vì bạn (hoặc ai đó) đã yêu cầu đặt lại mật khẩu cho tài khoản của bạn.\n\n
       Vui lòng nhấp vào liên kết sau hoặc dán nó vào trình duyệt của bạn để hoàn tất quá trình:\n\n
