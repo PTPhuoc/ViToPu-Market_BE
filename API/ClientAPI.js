@@ -1,161 +1,126 @@
 const uri = require("express").Router();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const ClientModel = require('../Model/ClientModel');
-const TaskOnceImage = require("../TakeImage");
-const fs = require("fs");
-const LoadImage = require("../LoadImage");
-const path = require('path');
+const bcrypt = require("bcryptjs");
+const verifier = require("email-verify");
+const ClientModel = require("../Model/ClientModel");
+const path = require("path");
+const SaveImage = require("../LoadImage");
+const nodemailer = require("nodemailer");
 
-uri.post('/register', LoadImage.single('hinhAnh'), async (req, res) => {
-  try {
-    const { hoVaTen, gioiTinh, ngaySinh, diaChi, email, matKhau } = req.body;
-
-    // Kiểm tra xem email đã tồn tại chưa
-    let client = await ClientModel.findOne({ email });
-    if (client) {
-      return res.status(400).json({ msg: 'Email đã được sử dụng' });
+uri.post("/SignUp", async (req, res) => {
+  const { hoVaTen, gioiTinh, ngaySinh, diaChi, email, matKhau, loaiAnh } =
+    req.body;
+  verifier.verify(email, async (err, info) => {
+    if (err || !info.success) {
+      return res.json({ Status: "Not Found" });
     }
-
-    // Lấy số lượng khách hàng hiện tại
-    const clientCount = await ClientModel.countDocuments();
-    const maKhachHang = `KH${String(clientCount + 1).padStart(3, '0')}`; // Tạo maKhachHang tự động
-
-    // Mã hóa mật khẩu
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(maKhachHang, salt);
-
-    // Xử lý tải lên hình ảnh
-    let hinhAnh = '';
-    let LoaiAnh = '';
-    if (req.file) {
-      hinhAnh = req.file.filename;
-      LoaiAnh = req.file.mimetype.split('/')[1]; // Lấy phần mở rộng của file
-    } else {
-      return res.status(400).json({ msg: 'Chưa tải lên hình ảnh' });
+    const ExistsAccount = await ClientModel.findOne({ email: email });
+    if (ExistsAccount) {
+      return res.json({ Status: "False" });
     }
-
-    // Tạo client mới
-    client = new ClientModel({
-      maKhachHang,
+    const ClientCount = (await ClientModel.countDocuments()) + 1;
+    const hashedPassword = await bcrypt.hash(matKhau, 10);
+    const NewClient = new ClientModel({
       hoVaTen,
       gioiTinh,
       ngaySinh,
       diaChi,
       email,
       matKhau: hashedPassword,
-      hinhAnh,
-      LoaiAnh
+      maKhachHang:
+        "KH" +
+        (ClientCount < 10
+          ? "00" + ClientCount
+          : ClientCount < 100
+          ? "0" + ClientCount
+          : ClientCount),
+      loaiAnh,
     });
+    NewClient.hinhAnh = NewClient.maKhachHang + NewClient._id;
+    await NewClient.save();
+    res.json({
+      ID: NewClient._id,
+      hinhAnh: NewClient.hinhAnh,
+      loaiAnh: NewClient.loaiAnh,
+    });
+  });
+});
 
-    await client.save();
-
-    // Đổi tên file (phần này không thay đổi)
-    const fileName = req.file.originalname;
-    const fileExt = fileName.split('.').pop().toLowerCase();
-    const newFileName = `${client.maKhachHang}${client._id}`;
-    const oldPath = req.file.path;
-    const newPath = path.join(__dirname, '..', 'Image', `${newFileName}.${fileExt}`);
-    
-    if (fs.existsSync(oldPath)) {
-      fs.renameSync(oldPath, newPath);
-      // Cập nhật tên file vào cơ sở dữ liệu (không có phần mở rộng)
-      client.hinhAnh = newFileName; // Chỉ lưu tên file
-      await client.save(); // Lưu cập nhật
-    } else {
-      return res.status(400).json({ msg: 'Lỗi tải lên hình ảnh' });
-    }
-
-    // Đọc hình ảnh đã lưu
-    const imagePath = path.join(__dirname, '..', 'Image', `${client.hinhAnh}.${fileExt}`); // Đường dẫn đúng
-    const imageBuffer = fs.readFileSync(imagePath);
-    const base64Image = imageBuffer.toString('base64');
-
-    // Tạo JWT token
-    const payload = {
-      client: {
-        id: client.id
-      }
-    };
-
-    if (!process.env.JWT_SECRET) {
-      return res.status(500).json({ msg: 'Thiếu khóa bí mật JWT' });
-    }
-
-    jwt.sign(
-      payload,
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' },
-      (err, token) => {
-        if (err) throw err;
-        res.json({ 
-          token, 
-          client: { 
-            id: client.id, 
-            email: client.email, 
-            hoVaTen: client.hoVaTen,
-            hinhAnh: base64Image
-          } 
-        });
-      }
-    );
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Lỗi server');
+uri.post("/SaveImage", async (req, res) => {
+  if(SaveImage(req)){
+    return res.json({Status: "Success", ID: req.body.ID})
   }
 });
 
-
+uri.post("/GetInfor", async (req, res) => {
+  const user = await ClientModel.findById(req.body.ID);
+  if (!user) {
+    return res.json({ Status: "False" });
+  }
+  res.json({
+    user,
+    hinhAnh: "/Image/" + user.hinhAnh + "." + user.loaiAnh,
+  });
+});
 
 // Đăng nhập
-uri.post('/login', async (req, res) => {
-  try {
-    const { email, matKhau } = req.body;
-
-    // Kiểm tra xem email có tồn tại không
-    let client = await ClientModel.findOne({ email });
-    if (!client) {
-      return res.status(400).json({ msg: 'Thông tin đăng nhập không hợp lệ' });
-    }
-
-    // Kiểm tra mật khẩu
-    const isMatch = await bcrypt.compare(matKhau, client.matKhau);
+uri.post("/SignIn", async (req, res) => {
+  const { email, matKhau } = req.body;
+  const user = await ClientModel.findOne({ email: email });
+  if (!user) {
+    return res.json({ Status: "Not Found" });
+  } else {
+    const isMatch = await bcrypt.compare(matKhau, user.matKhau);
     if (!isMatch) {
-      return res.status(400).json({ msg: 'Thông tin đăng nhập không hợp lệ' });
+      return res.json({ Status: "False" });
+    } else {
+      return res.json({ ID: user._id });
     }
+  }
+});
 
-    // Đọc hình ảnh của client
-    const imagePath = TaskOnceImage(client.hinhAnh);
-    const base64Image = await LoadImage(imagePath);
+uri.post("/SendCode", async (req, res) => {
+  const user = await ClientModel.findOne({ email: req.body.Email });
+  if (user) {
+    const code = Math.floor(100000 + Math.random() * 900000);
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: {
+        user: process.env.user,
+        pass: process.env.pass,
+      },
+    });
 
-    // Tạo JWT token
-    const payload = {
-      client: {
-        id: client.id
-      }
+    const mailOptions = {
+      to: user.email,
+      from: "1050080070@sv.hcmunre.edu.vn",
+      subject: "Đặt lại mật khẩu",
+      html: `
+      <div style="font-family: Arial, sans-serif; color: #333; padding: 20px; background-color: #f7f7f7;">
+        <h3 style="color: #4CAF50;">Xin chào,</h3>
+        <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Mã xác nhận của bạn là:</p>
+        <h2 style="color: #4CAF50; font-size: 24px; margin: 20px 0;">${code}</h2>
+        <p>Vui lòng nhập mã này để hoàn tất quá trình đặt lại mật khẩu. Nếu bạn không yêu cầu thao tác này, vui lòng bỏ qua email này.</p>
+        <p style="margin-top: 30px;">Trân trọng,<br>ViToPu - Luôn sẵn sàng hỗ trợ bạn!</p>
+      </div>
+    `,
     };
 
-    jwt.sign(
-      payload,
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' },
-      (err, token) => {
-        if (err) throw err;
-        res.json({ 
-          token, 
-          client: {
-            id: client.id,
-            email: client.email,
-            hoVaTen: client.hoVaTen,
-            hinhAnh: base64Image
-          }
-        });
-      }
-    );
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Lỗi server');
+    await transporter.sendMail(mailOptions);
+    res.json({ Status: "Success", Code: code });
+  } else {
+    res.json({ Status: "Not Found" });
   }
+});
+
+uri.post("/ChangePass", async (req, res) => {
+  const hashedPassword = await bcrypt.hash(req.body.NewPass, 10);
+  const user = await ClientModel.findOne({ email: req.body.Email });
+  await ClientModel.findByIdAndUpdate(user._id, {
+    $set: { matKhau: hashedPassword },
+  });
+  res.json({
+    ID: user._id,
+  });
 });
 
 module.exports = uri;

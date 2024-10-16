@@ -1,27 +1,17 @@
-const ClientModel = require("./Model/ClientModel"); 
-const multer = require('multer');
+const multer = require("multer");
 const path = require('path');
 
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, './Image');
-    },
-    filename: async function (req, file, cb) {
-      const { maKhachHang, hoVaTen, gioiTinh, ngaySinh, diaChi, email, matKhau } = req.body;
-      const extentiponPath = path.extname(file.originalname);
-      const NewClient = new ClientModel({
-        maKhachHang, hoVaTen, gioiTinh, ngaySinh, diaChi, email, matKhau
-      })
-
-      NewClient.hinhAnh = NewClient.maKhachHang + NewClient._id
-      NewClient.LoaiAnh = extentiponPath
-
-      await NewClient.save()
-
-      cb(null, NewClient.hinhAnh + "." + extentiponPath)
+const SaveImage = (req) => {
+  const file = req.files.DataImage;
+  const newFilename = `${req.body.hinhAnh}.${req.body.loaiAnh}`;
+  const newPath = path.join(__dirname, 'Image', newFilename);
+  file.mv(newPath, (err) => {
+    if (err) {
+      return false
     }
+    return true
   });
-  
-  const Upload = multer({ storage: storage });
+}
 
-module.exports = Upload
+module.exports = SaveImage;
+
