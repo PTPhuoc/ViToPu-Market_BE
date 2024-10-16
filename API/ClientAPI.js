@@ -123,4 +123,81 @@ uri.post("/ChangePass", async (req, res) => {
   });
 });
 
+uri.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ msg: 'Vui lòng cung cấp email' });
+    }
+
+    const client = await ClientModel.findOne({ email });
+
+    if (!client) {
+      return res.status(400).json({ msg: 'Không tìm thấy người dùng với email này' });
+    }
+
+    // Tạo token đặt lại mật khẩu
+    const resetToken = crypto.randomBytes(20).toString('hex');
+    client.resetPasswordToken = resetToken;
+    client.resetPasswordExpires = Date.now() + 300000; // Token hết hạn sau 1 giờ
+
+    await client.save();
+
+    // Gửi email chứa liên kết đặt lại mật khẩu
+    const transporter = nodemailer.createTransport({
+      service: 'Gmail',
+      auth: {
+        user: "1050080070@sv.hcmunre.edu.vn",
+        pass: "cgzj dcgv wvry qjwf",
+      }
+    });
+
+    const mailOptions = {
+      to: client.email,
+      from: '1050080070@sv.hcmunre.edu.vn',
+      subject: 'Đặt lại mật khẩu',
+      text: `Bạn nhận được email này vì bạn (hoặc ai đó) đã yêu cầu đặt lại mật khẩu cho tài khoản của bạn.\n\n
+      Vui lòng nhấp vào liên kết sau hoặc dán nó vào trình duyệt của bạn để hoàn tất quá trình:\n\n
+      http://${req.headers.host}/reset-password/${resetToken}\n\n
+      Nếu bạn không yêu cầu điều này, vui lòng bỏ qua email này và mật khẩu của bạn sẽ không thay đổi.\n`
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ msg: 'Email đặt lại mật khẩu đã được gửi' });
+  } catch (err) {
+    console.error("Error in forgot-password endpoint:", err);
+    res.status(500).json({ msg: 'Lỗi server' });
+  }
+});
+
+// Endpoint để đặt lại mật khẩu
+uri.post('/reset-password/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { matKhauMoi } = req.body;
+
+    const client = await ClientModel.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!client) {
+      return res.status(400).json({ msg: 'Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn' });
+    }
+
+    client.matKhau = matKhauMoi;
+    client.resetPasswordToken = undefined;
+    client.resetPasswordExpires = undefined;
+
+    await client.save();
+
+    res.status(200).json({ msg: 'Mật khẩu đã được đặt lại thành công' });
+  } catch (err) {
+    console.error("Error in reset-password endpoint:", err);
+    res.status(500).json({ msg: 'Lỗi server' });
+  }
+});
+
 module.exports = uri;
