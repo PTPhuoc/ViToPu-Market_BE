@@ -26,7 +26,7 @@ const sanPhamSchema = new mongoose.Schema({
         type: String,
         required: false,
     },
-    LoaiAnh: {
+    loaiAnh: {
         type: String,
         required: false,
     },

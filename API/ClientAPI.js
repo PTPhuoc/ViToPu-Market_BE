@@ -46,8 +46,14 @@ uri.post("/SignUp", async (req, res) => {
 });
 
 uri.post("/SaveImage", async (req, res) => {
-  if(SaveImage(req)){
-    return res.json({Status: "Success", ID: req.body.ID})
+  const file = req.files.DataImage;
+  const newFilename = `${req.body.hinhAnh}.${req.body.loaiAnh}`;
+  try {
+    await SaveImage(file, newFilename);
+    res.json({ Status: "Success", ID: req.body.ID });
+  } catch (err) {
+    console.error('Error saving image:', err);
+    res.status(500).json({ Status: "Error", message: "Failed to save image" });
   }
 });
 

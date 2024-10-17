@@ -1,14 +1,15 @@
 const path = require('path');
 
-const SaveImage = (req) => {
-  const file = req.files.DataImage;
-  const newFilename = `${req.body.hinhAnh}.${req.body.loaiAnh}`;
-  const newPath = path.join(__dirname, 'Image', newFilename);
-  file.mv(newPath, (err) => {
-    if (err) {
-      return false
-    }
-    return true
+const SaveImage = (file, name) => {
+  const newPath = path.join(__dirname, 'Image', name);
+  return new Promise((resolve, reject) => {
+    file.mv(newPath, (err) => {
+      if (err) {
+        reject(err);  // Báo lỗi nếu có lỗi
+      } else {
+        resolve(true);  // Trả về true nếu thành công
+      }
+    });
   });
 }
 
