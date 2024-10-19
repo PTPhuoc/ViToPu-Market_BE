@@ -1,26 +1,49 @@
 const uri = require("express").Router();
-const LichSuModel = require('../Model/LichSuModel');
+const LichSuModel = require("../Model/LichSuModel");
+const GioHangModel = require("../Model/GioHangModel");
+const SanPhamModel = require("../Model/SanPhamModel");
+const CuaHangModel = require("../Model/CuaHangModel");
 
-uri.post('/purchase-history', async (req, res) => {
-    try {
-        const maKhachHang = req.body.maKhachHang;
-        console.log('Mã khách hàng:', maKhachHang);
-
-        if (!maKhachHang) {
-            return res.status(400).json({ msg: 'Thiếu mã khách hàng' });
-        }
-       
-        const purchaseHistory = await LichSuModel.find({ maKhachHang }).sort({ ngayMua: -1 }).exec();
-
-        if (purchaseHistory.length === 0) {
-            return res.status(404).json({ msg: 'Không tìm thấy lịch sử mua hàng' });
-        }
-
-        res.json(purchaseHistory);
-    } catch (error) {
-        console.error('Lỗi khi lấy lịch sử mua hàng: ', error);
-        res.status(500).json({ msg: 'Đã xảy ra lỗi khi xử lý yêu cầu' });
-    }
+uri.post("/AddToHistory", async (req, res) => {
+  const { maKhachHang, maSanPham, ngayMua, soLuong, giaTien } = req.body;
+  const NewHistory = new LichSuModel({
+    maKhachHang: maKhachHang,
+    maSanPham: maSanPham,
+    ngayMua: ngayMua,
+    soLuong: soLuong,
+    giaTien: giaTien,
+  });
+  await NewHistory.save();
+  await GioHangModel.deleteOne({
+    maKhachHang: req.body.maKhachHang,
+    maSanPham: req.body.maSanPham,
+  });
+  res.json({ Status: "Success" });
 });
 
-module.exports = uri;   
+uri.post("/GetHistoryCart", async (req, res) => {
+  const historyCart = await LichSuModel.find({ maKhachHang: req.body.ID });
+  if (historyCart.length > 0) {
+    const detailHistory = await Promise.all(
+      historyCart.map(async (e) => {
+        const product = await SanPhamModel.findById(e.maSanPham);
+        const shop = await CuaHangModel.findById(product.maCuaHang);
+        return {
+          maSanPham: e.maSanPham,
+          maKhachHang: e.maKhachHang,
+          ngayMua: e.ngayMua,
+          soLuong: e.soLuong,
+          giaTien: e.giaTien,
+          loaiAnh: product.loaiAnh,
+          tenSanPham: product.tenSanPham,
+          tenCuaHang: shop.tenCuaHang,
+        };
+      })
+    );
+    res.send({ Status: "Success", detailHistory: detailHistory });
+  } else {
+    res.json({ Status: "Not Found" });
+  }
+});
+
+module.exports = uri;

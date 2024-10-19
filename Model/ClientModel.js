@@ -1,11 +1,6 @@
 const mongoose = require('mongoose');
 
 const clientSchema = new mongoose.Schema({
-    maKhachHang: {
-        type: String,
-        required: true,
-        unique: true,
-    },
     hoVaTen: {
         type: String,
         required: true,
@@ -39,4 +34,5 @@ const clientSchema = new mongoose.Schema({
         required: false,
     },
 });
+
 module.exports = mongoose.model('ClientModel', clientSchema, 'ClientModel');

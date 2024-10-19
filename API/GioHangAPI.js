@@ -1,69 +1,59 @@
-const express = require('express');
-const uri = express.Router();
-const GioHangModel = require('../Model/GioHangModel');
-const LichSuModel = require('../Model/LichSuModel');
-const SanPhamModel = require('../Model/SanPhamModel');
+const uri = require("express").Router();
+const GioHangModel = require("../Model/GioHangModel");
+const SanPhamModel = require("../Model/SanPhamModel");
+const CuaHangModel = require("../Model/CuaHangModel");
 
-
-uri.post('/buy-product-in-cart', async (req, res) => {
-    try {
-        const { maKhachHang, danhSachMaSanPham } = req.body;
-
-        const gioHangItems = await GioHangModel.find({
-            maKhachHang,
-            maSanPham: { $in: danhSachMaSanPham }
-        });
-
-        if (gioHangItems.length === 0) {
-            return res.status(404).json({ msg: 'Không tìm thấy sản phẩm trong giỏ hàng' });
-        }
-
-        const sanPhamIds = gioHangItems.map(item => item.maSanPham);
-        const sanPhamItems = await SanPhamModel.find({ maSanPham: { $in: sanPhamIds } });
-
-        const lichSuMuaHangItems = gioHangItems.map(item => {
-            const sanPham = sanPhamItems.find(sp => sp.maSanPham === item.maSanPham);
-            return {
-                maKhachHang: item.maKhachHang,
-                maSanPham: item.maSanPham,
-                soLuong: item.soLuong,
-                ngayMua: new Date(),
-                giaTien: sanPham ? sanPham.giaTien : 0
-            };
-        });
-
-        await LichSuModel.insertMany(lichSuMuaHangItems);
-
-        await GioHangModel.deleteMany({
-            maKhachHang,
-            maSanPham: { $in: danhSachMaSanPham }
-        });
-
-        res.status(200).json({ msg: 'Đã mua sản phẩm thành công', lichSuMuaHangItems });
-    } catch (err) {
-        console.error("Lỗi khi mua hàng:", err);
-        res.status(500).json({ message: err.message });
-    }
+uri.post("/AddToCart", async (req, res) => {
+  const { maKhachHang, maSanPham } = req.body;
+  const checkCart = await GioHangModel.findOne({
+    maKhachHang: maKhachHang,
+    maSanPham: maSanPham,
+  });
+  if (checkCart) {
+    checkCart.soLuong += 1;
+    await checkCart.save();
+  } else {
+    const NewCart = new GioHangModel({
+      maKhachHang: maKhachHang,
+      maSanPham: maSanPham,
+      soLuong: 1,
+    });
+    await NewCart.save();
+  }
+  res.json({ Status: "Success" });
 });
 
-uri.delete('/delete-product-in-cart', async (req, res) => {
-    try {
-        const { maKhachHang, maSanPham } = req.body;
+uri.post("/CartOfUser", async (req, res) => {
+  const carts = await GioHangModel.find({ maKhachHang: req.body.ID });
+  if (carts.length > 0) {
+    const detailCart = await Promise.all(
+      carts.map(async (e) => {
+        const product = await SanPhamModel.findById(e.maSanPham);
+        const shop = await CuaHangModel.findById(product.maCuaHang);
+        return {
+          maKhachHang: e.maKhachHang,
+          maSanPham: e.maSanPham,
+          soLuong: e.soLuong,
+          giaTien: product.giaTien,
+          tenSanPham: product.tenSanPham,
+          hinhAnh: product.hinhAnh,
+          loaiAnh: product.loaiAnh,
+          tenCuaHang: shop.tenCuaHang,
+        };
+      })
+    );
+    res.send({ Status: "Success", detailCart: detailCart });
+  } else {
+    res.json({ Status: "Not Found" });
+  }
+});
 
-        const result = await GioHangModel.deleteMany({
-            maKhachHang,
-            maSanPham
-        });
-
-        if (result.deletedCount === 0) {
-            return res.status(404).json({ msg: 'Không tìm thấy sản phẩm trong giỏ hàng' });
-        }
-
-        res.status(200).json({ msg: 'Đã xóa sản phẩm thành công' });
-    } catch (err) {
-        console.error("Lỗi khi xóa sản phẩm trong giỏ hàng:", err);
-        res.status(500).json({ message: err.message });
-    }
+uri.post("/DeleteCart", async (req, res) => {
+  await GioHangModel.deleteOne({
+    maKhachHang: req.body.maKhachHang,
+    maSanPham: req.body.maSanPham,
+  });
+  res.json({ Status: "Success" });
 });
 
 module.exports = uri;

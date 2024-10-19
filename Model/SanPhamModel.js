@@ -1,11 +1,6 @@
 const mongoose = require('mongoose');
 
 const sanPhamSchema = new mongoose.Schema({
-    maSanPham: {
-        type: String,
-        required: true,
-        unique: true,
-    },
     maCuaHang: {
         type: String,
         required: true,

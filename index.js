@@ -5,6 +5,9 @@ const SanPhamAPI = require("./API/SanPhamAPI");
 const DanhGiaAPI = require("./API/DanhGiaAPI");
 const ClientAPI = require("./API/ClientAPI");
 const CuaHang = require("./API/CuaHangAPI")
+const PhanHoi = require("./API/PhanHoiAPI")
+const GioHang = require("./API/GioHangAPI")
+const LichSu = require("./API/LichSuAPI")
 const path = require("path")
 const app = express();
 const fileUpload = require('express-fileupload');
@@ -25,6 +28,9 @@ app.use("/SanPham", SanPhamAPI);
 app.use("/DanhGia", DanhGiaAPI);
 app.use("/Client", ClientAPI);
 app.use("/CuaHang", CuaHang);
+app.use("/PhanHoi", PhanHoi);
+app.use("/GioHang", GioHang);
+app.use("/LichSu", LichSu);
 
 app.listen(9000, () => {
   console.log("Server is running!");

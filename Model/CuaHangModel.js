@@ -1,11 +1,6 @@
 const mongoose = require("mongoose");
 
 const cuaHangSchema = new mongoose.Schema({
-  maCuaHang: {
-    type: String,
-    required: true,
-    unique: true,
-  },
   maKhachHang: {
     type: String,
     required: true,
@@ -22,7 +17,7 @@ const cuaHangSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
-  LoaiAnh: {
+  loaiAnh: {
     type: String,
     required: false,
   },

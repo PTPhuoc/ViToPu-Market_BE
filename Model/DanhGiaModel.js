@@ -1,11 +1,6 @@
 const mongoose = require('mongoose');
 
 const danhGiaSchema = new mongoose.Schema({
-    maDanhgia: {
-        type: String,
-        required: true,
-        unique: true,
-    },
     maKhachHang: {
         type: String,
         required: true,
@@ -24,6 +19,10 @@ const danhGiaSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    ngayDanhGia: {
+        type: Date,
+        required: true
+    }
 });
 const DanhGiaModel = mongoose.model('DanhGiaModel', danhGiaSchema, 'DanhGiaModel');
 

@@ -2,7 +2,6 @@ const uri = require("express").Router();
 const bcrypt = require("bcryptjs");
 const verifier = require("email-verify");
 const ClientModel = require("../Model/ClientModel");
-const path = require("path");
 const SaveImage = require("../LoadImage");
 const nodemailer = require("nodemailer");
 
@@ -17,7 +16,6 @@ uri.post("/SignUp", async (req, res) => {
     if (ExistsAccount) {
       return res.json({ Status: "False" });
     }
-    const ClientCount = (await ClientModel.countDocuments()) + 1;
     const hashedPassword = await bcrypt.hash(matKhau, 10);
     const NewClient = new ClientModel({
       hoVaTen,
@@ -26,35 +24,22 @@ uri.post("/SignUp", async (req, res) => {
       diaChi,
       email,
       matKhau: hashedPassword,
-      maKhachHang:
-        "KH" +
-        (ClientCount < 10
-          ? "00" + ClientCount
-          : ClientCount < 100
-          ? "0" + ClientCount
-          : ClientCount),
       loaiAnh,
     });
-    NewClient.hinhAnh = NewClient.maKhachHang + NewClient._id;
+    NewClient.hinhAnh = NewClient._id;
     await NewClient.save();
-    res.json({
-      ID: NewClient._id,
-      hinhAnh: NewClient.hinhAnh,
-      loaiAnh: NewClient.loaiAnh,
-    });
+    const newFilename = `${NewClient.hinhAnh}.${NewClient.loaiAnh}`;
+    const file = req.files.DataImage;
+    try {
+      await SaveImage(file, newFilename);
+      res.json({ Status: "Success", ID: NewClient._id });
+    } catch (err) {
+      console.error("Error saving image:", err);
+      res
+        .status(500)
+        .json({ Status: "Error", message: "Failed to save image" });
+    }
   });
-});
-
-uri.post("/SaveImage", async (req, res) => {
-  const file = req.files.DataImage;
-  const newFilename = `${req.body.hinhAnh}.${req.body.loaiAnh}`;
-  try {
-    await SaveImage(file, newFilename);
-    res.json({ Status: "Success", ID: req.body.ID });
-  } catch (err) {
-    console.error('Error saving image:', err);
-    res.status(500).json({ Status: "Error", message: "Failed to save image" });
-  }
 });
 
 uri.post("/GetInfor", async (req, res) => {
@@ -62,10 +47,7 @@ uri.post("/GetInfor", async (req, res) => {
   if (!user) {
     return res.json({ Status: "False" });
   }
-  res.json({
-    user,
-    hinhAnh: "/Image/" + user.hinhAnh + "." + user.loaiAnh,
-  });
+  res.send(user);
 });
 
 // Đăng nhập
@@ -128,6 +110,5 @@ uri.post("/ChangePass", async (req, res) => {
     ID: user._id,
   });
 });
-
 
 module.exports = uri;
