@@ -13,5 +13,9 @@ const phanHoiSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    ngayPhanHoi: {
+        type: Date,
+        required: true,
+    }
 });
 module.exports = mongoose.model('PhanHoiModel', phanHoiSchema, 'PhanHoiModel');
