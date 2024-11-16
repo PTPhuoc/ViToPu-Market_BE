@@ -3,7 +3,6 @@ const fs = require("fs");
 const SanPhamModel = require("../Model/SanPhamModel");
 const DanhGiaModel = require("../Model/DanhGiaModel");
 const CuaHangModel = require("../Model/CuaHangModel");
-const DanhGiaModel = require("../Model/DanhGiaModel");
 
 uri.post("/Products", async (req, res) => {
   const Products = await SanPhamModel.find();
