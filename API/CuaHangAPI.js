@@ -34,10 +34,10 @@ uri.post("/CreateShop", async (req, res) => {
   await NewShop.save();
   try {
     await SaveImage(file, NewShop.hinhAnh + "." + loaiAnh);
-    res.json({ Status: "Success", IDS: NewShop._id });
+    return res.json({ Status: "Success", IDS: NewShop._id });
   } catch (err) {
     console.error('Error saving image:', err);
-    res.status(500).json({ Status: "Error", message: "Failed to save image" });
+    return res.status(500).json({ Status: "Error", message: "Failed to save image" });
   }
 });
 

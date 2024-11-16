@@ -32,10 +32,10 @@ uri.post("/SignUp", async (req, res) => {
     const file = req.files.DataImage;
     try {
       await SaveImage(file, newFilename);
-      res.json({ Status: "Success", ID: NewClient._id });
+      return res.json({ Status: "Success", ID: NewClient._id });
     } catch (err) {
       console.error("Error saving image:", err);
-      res
+      return res
         .status(500)
         .json({ Status: "Error", message: "Failed to save image" });
     }
@@ -47,7 +47,7 @@ uri.post("/GetInfor", async (req, res) => {
   if (!user) {
     return res.json({ Status: "False" });
   }
-  res.send(user);
+  return res.send(user);
 });
 
 // Đăng nhập
@@ -94,9 +94,9 @@ uri.post("/SendCode", async (req, res) => {
     };
 
     await transporter.sendMail(mailOptions);
-    res.json({ Status: "Success", Code: code });
+    return res.json({ Status: "Success", Code: code });
   } else {
-    res.json({ Status: "Not Found" });
+    return res.json({ Status: "Not Found" });
   }
 });
 
@@ -106,7 +106,7 @@ uri.post("/ChangePass", async (req, res) => {
   await ClientModel.findByIdAndUpdate(user._id, {
     $set: { matKhau: hashedPassword },
   });
-  res.json({
+  return res.json({
     ID: user._id,
   });
 });

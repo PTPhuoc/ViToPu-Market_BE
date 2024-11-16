@@ -20,7 +20,7 @@ uri.post("/AddToCart", async (req, res) => {
     });
     await NewCart.save();
   }
-  res.json({ Status: "Success" });
+  return res.json({ Status: "Success" });
 });
 
 uri.post("/CartOfUser", async (req, res) => {
@@ -42,9 +42,9 @@ uri.post("/CartOfUser", async (req, res) => {
         };
       })
     );
-    res.send({ Status: "Success", detailCart: detailCart });
+    return res.send({ Status: "Success", detailCart: detailCart });
   } else {
-    res.json({ Status: "Not Found" });
+    return res.json({ Status: "Not Found" });
   }
 });
 
@@ -53,7 +53,7 @@ uri.post("/DeleteCart", async (req, res) => {
     maKhachHang: req.body.maKhachHang,
     maSanPham: req.body.maSanPham,
   });
-  res.json({ Status: "Success" });
+  return res.json({ Status: "Success" });
 });
 
 module.exports = uri;

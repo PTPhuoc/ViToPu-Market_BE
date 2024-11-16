@@ -18,7 +18,7 @@ uri.post("/AddToHistory", async (req, res) => {
     maKhachHang: req.body.maKhachHang,
     maSanPham: req.body.maSanPham,
   });
-  res.json({ Status: "Success" });
+  return res.json({ Status: "Success" });
 });
 
 uri.post("/GetHistoryCart", async (req, res) => {
@@ -40,9 +40,9 @@ uri.post("/GetHistoryCart", async (req, res) => {
         };
       })
     );
-    res.send({ Status: "Success", detailHistory: detailHistory });
+    return res.send({ Status: "Success", detailHistory: detailHistory });
   } else {
-    res.json({ Status: "Not Found" });
+    return res.json({ Status: "Not Found" });
   }
 });
 

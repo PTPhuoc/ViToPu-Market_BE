@@ -1,17 +1,17 @@
 const mongoose = require('mongoose');
 
 const thongBaoSchema = new mongoose.Schema({
-    maKhachHang: {
+    maSanPham: {
         type: String,
-        required: true,
-    },
-    maCuaHang: {
-        type: String,
-        required: true,
+        required: true
     },
     noiDung: {
         type: String,
         required: true,
+    },
+    Den: {
+        type: String,
+        required: true
     },
     trangThai: {
         type: Boolean,
