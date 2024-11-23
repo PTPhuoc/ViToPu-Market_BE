@@ -25,7 +25,7 @@ uri.post("/AddToCart", async (req, res) => {
 
 uri.post("/CartOfUser", async (req, res) => {
   const carts = await GioHangModel.find({ maKhachHang: req.body.ID });
-  if (carts.length > 0) {
+  if (carts.length > 0 && carts) {
     const detailCart = await Promise.all(
       carts.map(async (e) => {
         const product = await SanPhamModel.findById(e.maSanPham);
