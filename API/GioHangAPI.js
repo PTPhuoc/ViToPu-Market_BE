@@ -39,6 +39,7 @@ uri.post("/CartOfUser", async (req, res) => {
           hinhAnh: product.hinhAnh,
           loaiAnh: product.loaiAnh,
           tenCuaHang: shop.tenCuaHang,
+          tongTien: e.soLuong*product.giaTien
         };
       })
     );
