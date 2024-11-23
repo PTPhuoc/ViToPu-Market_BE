@@ -1,8 +1,10 @@
 const uri = require("express").Router();
 const fs = require("fs");
+const path = require('path');
 const SanPhamModel = require("../Model/SanPhamModel");
 const DanhGiaModel = require("../Model/DanhGiaModel");
 const CuaHangModel = require("../Model/CuaHangModel");
+const SaveImage = require("../LoadImage")
 
 uri.post("/Products", async (req, res) => {
   const Products = await SanPhamModel.find();
@@ -31,16 +33,35 @@ uri.post("/AddProduct", async (req, res) => {
     loaiAnh: loaiAnh,
   });
   newProduct.hinhAnh = newProduct._id;
+  await newProduct.save()
   try {
     await SaveImage(file, newProduct.hinhAnh + "." + loaiAnh);
     return res.json({ Status: "Success", IDP: newProduct._id });
   } catch (err) {
-    console.error("Error saving image:", err);
     return res
       .status(500)
       .json({ Status: "Error", message: "Failed to save image" });
   }
 });
+
+uri.post("/UpdateProduct", async (req, res) => {
+  const { id, tenSanPham, giaTien, moTa, loaiAnh } = req.body;
+  const file = req.files.DataImage;
+  const currentProduct = await SanPhamModel.findById(id)
+  if(currentProduct){
+    currentProduct.tenSanPham = tenSanPham;
+    currentProduct.giaTien = giaTien;
+    currentProduct.moTa = moTa;
+    currentProduct.loaiAnh = loaiAnh;
+    const imagePath = path.join(__dirname, "../Image", `${currentProduct.hinhAnh}.${currentProduct.loaiAnh}`);
+    fs.unlinkSync(imagePath)
+    await SaveImage(file, currentProduct.hinhAnh + "." + loaiAnh);
+    currentProduct.save()
+    return res.json({Status: "Success"})
+  }else{
+    return res.json({Status: "Not Found"})
+  }
+})
 
 uri.post("/ProductOfShop", async (req, res) => {
   const shop = await CuaHangModel.findById(req.body.IDSP);
@@ -56,6 +77,8 @@ uri.post("/DeleteProduct", async (req, res) => {
   const IDP = req.body.IDP;
   const result = await SanPhamModel.findOneAndDelete({ _id: IDP });
   if (result) {
+    const imagePath = path.join(__dirname, "../Image", `${result._id}.${result.loaiAnh}`);
+    fs.unlinkSync(imagePath)
     return res.json({ Status: "Success" });
   } else {
     return res.json({ Status: "False" });
